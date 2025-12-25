@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/utils/responsive.dart';
 import '../../../../shared/widgets/custom_text_field.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import '../../../../shared/widgets/animations/fade_slide_widget.dart';
@@ -266,26 +267,43 @@ class _MakePaymentScreenState extends ConsumerState<MakePaymentScreen> {
               
               FadeSlideWidget(
                 delay: const Duration(milliseconds: 300),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: CustomButton(
-                        text: 'Cancel',
-                        onPressed: () => Navigator.pop(context),
-                        type: ButtonType.secondary,
+                child: Responsive.isMobile(context)
+                    ? Column(
+                        children: [
+                          CustomButton(
+                            text: 'Record Payment',
+                            icon: Icons.payment,
+                            onPressed: _submitForm,
+                            isLoading: _isLoading,
+                          ),
+                          const SizedBox(height: 12),
+                          CustomButton(
+                            text: 'Cancel',
+                            onPressed: () => Navigator.pop(context),
+                            type: ButtonType.secondary,
+                          ),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          Expanded(
+                            child: CustomButton(
+                              text: 'Cancel',
+                              onPressed: () => Navigator.pop(context),
+                              type: ButtonType.secondary,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: CustomButton(
+                              text: 'Record Payment',
+                              icon: Icons.payment,
+                              onPressed: _submitForm,
+                              isLoading: _isLoading,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: CustomButton(
-                        text: 'Record Payment',
-                        icon: Icons.payment,
-                        onPressed: _submitForm,
-                        isLoading: _isLoading,
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ],
           ),

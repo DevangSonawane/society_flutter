@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../core/utils/responsive.dart';
 import '../../core/constants/animation_constants.dart';
 import 'animations/fade_slide_widget.dart';
-import 'animations/slide_in_widget.dart';
 
 class ResponsiveStatisticsGrid extends StatelessWidget {
   final List<Widget> children;
