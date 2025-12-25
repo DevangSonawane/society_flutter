@@ -101,22 +101,34 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
 
   @override
   Widget build(BuildContext context) {
+    final statusBarHeight = MediaQuery.of(context).padding.top;
+    
     return Drawer(
       width: Responsive.getDrawerWidth(context),
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.backgroundLight,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topRight: Radius.circular(16),
+          bottomRight: Radius.circular(16),
+        ),
+      ),
       child: Column(
         children: [
           // Logo Section
           FadeInWidget(
             delay: const Duration(milliseconds: 100),
             child: Container(
-              height: 80,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppConstants.paddingLarge,
-                vertical: AppConstants.paddingMedium,
+              padding: EdgeInsets.only(
+                top: statusBarHeight + AppConstants.paddingMedium,
+                bottom: AppConstants.paddingMedium,
+                left: AppConstants.paddingLarge,
+                right: AppConstants.paddingLarge,
               ),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppColors.white,
+                borderRadius: const BorderRadius.only(
+                  topRight: Radius.circular(16),
+                ),
                 border: Border(
                   bottom: BorderSide(color: AppColors.borderLight, width: 1),
                 ),
@@ -147,7 +159,10 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
           // Navigation Items
           Expanded(
             child: ListView(
-              padding: EdgeInsets.zero,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppConstants.paddingMedium,
+                vertical: AppConstants.paddingMedium,
+              ),
               children: [
                 ..._navigationItems.asMap().entries.map((entry) {
                   final index = entry.key;
@@ -156,10 +171,13 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                   return RoleGuard(
                     module: module,
                     permissionType: PermissionType.view,
-                    child: FadeSlideWidget(
-                      delay: AnimationConstants.staggerDelay * (index + 1),
-                      direction: SlideDirection.left,
-                      child: _buildMenuItem(item),
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: FadeSlideWidget(
+                        delay: AnimationConstants.staggerDelay * (index + 1),
+                        direction: SlideDirection.left,
+                        child: _buildMenuItem(item),
+                      ),
                     ),
                   );
                 }),
@@ -167,10 +185,13 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                 // Expenses and Charges with Sub-menu (Admin only)
                 RoleGuard(
                   requiredRole: UserRole.admin,
-                  child: FadeSlideWidget(
-                    delay: AnimationConstants.staggerDelay * (_navigationItems.length + 1),
-                    direction: SlideDirection.left,
-                    child: _buildExpensesMenuItem(),
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: FadeSlideWidget(
+                      delay: AnimationConstants.staggerDelay * (_navigationItems.length + 1),
+                      direction: SlideDirection.left,
+                      child: _buildExpensesMenuItem(),
+                    ),
                   ),
                 ),
               ],
@@ -182,42 +203,23 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
             delay: AnimationConstants.staggerDelay * (_navigationItems.length + 2),
             direction: SlideDirection.left,
             child: Container(
-              decoration: const BoxDecoration(
+              padding: const EdgeInsets.all(AppConstants.paddingMedium),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: const BorderRadius.only(
+                  bottomRight: Radius.circular(16),
+                ),
                 border: Border(
                   top: BorderSide(color: AppColors.borderLight, width: 1),
                 ),
               ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    Navigator.pop(context);
-                    widget.onNavigate(AppConstants.loginRoute);
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppConstants.paddingMedium,
-                      vertical: AppConstants.paddingMedium,
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.logout,
-                          color: AppColors.textSecondary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Logout',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+              child: _buildMenuItem(
+                NavigationItem(
+                  title: 'Logout',
+                  icon: Icons.logout,
+                  route: AppConstants.loginRoute,
                 ),
+                isLogout: true,
               ),
             ),
           ),
@@ -226,8 +228,8 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
     );
   }
 
-  Widget _buildMenuItem(NavigationItem item) {
-    final isActive = _isActive(item.route);
+  Widget _buildMenuItem(NavigationItem item, {bool isLogout = false}) {
+    final isActive = !isLogout && _isActive(item.route);
     
     return Material(
       color: Colors.transparent,
@@ -236,16 +238,17 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
           Navigator.pop(context);
           widget.onNavigate(item.route);
         },
+        borderRadius: BorderRadius.circular(12),
         child: AnimatedContainer(
           duration: AnimationConstants.normal,
           curve: AnimationConstants.defaultCurve,
           decoration: BoxDecoration(
             color: isActive ? AppColors.primaryPurple : Colors.transparent,
-            borderRadius: const BorderRadius.all(Radius.zero),
+            borderRadius: BorderRadius.circular(12),
           ),
           padding: const EdgeInsets.symmetric(
-            horizontal: AppConstants.paddingMedium,
-            vertical: AppConstants.paddingSmall,
+            horizontal: 16,
+            vertical: 14,
           ),
           child: Row(
             children: [
@@ -254,17 +257,22 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                 child: Icon(
                   item.icon,
                   key: ValueKey('${item.route}_$isActive'),
-                  size: 20,
-                  color: isActive ? AppColors.white : AppColors.gray600,
+                  size: 22,
+                  color: isActive 
+                      ? AppColors.white 
+                      : (isLogout ? AppColors.textSecondary : AppColors.gray600),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: AnimatedDefaultTextStyle(
                   duration: AnimationConstants.fast,
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: isActive ? AppColors.white : AppColors.textPrimary,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                    color: isActive 
+                        ? AppColors.white 
+                        : (isLogout ? AppColors.textSecondary : AppColors.textPrimary),
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                    fontSize: 15,
                   ),
                   child: Text(item.title),
                 ),
@@ -278,6 +286,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
 
   Widget _buildExpensesMenuItem() {
     final isAnyActive = _isAnyExpensesActive();
+    final isExpandedOrActive = _expensesExpanded || isAnyActive;
     
     return Column(
       children: [
@@ -289,36 +298,41 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                 _expensesExpanded = !_expensesExpanded;
               });
             },
-            child: Container(
+            borderRadius: BorderRadius.circular(12),
+            child: AnimatedContainer(
+              duration: AnimationConstants.normal,
+              curve: AnimationConstants.defaultCurve,
               decoration: BoxDecoration(
-                color: (_expensesExpanded || isAnyActive)
+                color: isExpandedOrActive
                     ? AppColors.primaryPurple
                     : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
               ),
               padding: const EdgeInsets.symmetric(
-                horizontal: AppConstants.paddingMedium,
-                vertical: AppConstants.paddingSmall,
+                horizontal: 16,
+                vertical: 14,
               ),
               child: Row(
                 children: [
                   Icon(
                     Icons.receipt_long,
-                    size: 20,
-                    color: (_expensesExpanded || isAnyActive)
+                    size: 22,
+                    color: isExpandedOrActive
                         ? AppColors.white
                         : AppColors.gray600,
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Text(
                       'Expenses and Charge',
                       style: AppTextStyles.bodyMedium.copyWith(
-                        color: (_expensesExpanded || isAnyActive)
+                        color: isExpandedOrActive
                             ? AppColors.white
                             : AppColors.textPrimary,
-                        fontWeight: (_expensesExpanded || isAnyActive)
+                        fontWeight: isExpandedOrActive
                             ? FontWeight.w600
-                            : FontWeight.normal,
+                            : FontWeight.w500,
+                        fontSize: 15,
                       ),
                     ),
                   ),
@@ -326,8 +340,8 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                     _expensesExpanded
                         ? Icons.expand_less
                         : Icons.expand_more,
-                    size: 20,
-                    color: (_expensesExpanded || isAnyActive)
+                    size: 22,
+                    color: isExpandedOrActive
                         ? AppColors.white
                         : AppColors.gray600,
                   ),
@@ -337,55 +351,67 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
           ),
         ),
         if (_expensesExpanded)
-          ..._expensesItems.map((item) {
-            final isActive = _isActive(item.route);
-            return Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  Navigator.pop(context);
-                  widget.onNavigate(item.route);
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isActive
-                        ? AppColors.primaryPurpleLight
-                        : Colors.transparent,
-                  ),
-                  padding: const EdgeInsets.only(
-                    left: 44,
-                    right: AppConstants.paddingMedium,
-                    top: AppConstants.paddingSmall,
-                    bottom: AppConstants.paddingSmall,
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        item.icon,
-                        size: 18,
-                        color: isActive ? AppColors.white : AppColors.gray600,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          item.title,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: isActive
-                                ? AppColors.white
-                                : AppColors.textPrimary,
-                            fontWeight: isActive
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                            fontSize: 14,
-                          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 8, left: 12),
+            child: Column(
+              children: _expensesItems.map((item) {
+                final isActive = _isActive(item.route);
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                        widget.onNavigate(item.route);
+                      },
+                      borderRadius: BorderRadius.circular(10),
+                      child: AnimatedContainer(
+                        duration: AnimationConstants.normal,
+                        curve: AnimationConstants.defaultCurve,
+                        decoration: BoxDecoration(
+                          color: isActive
+                              ? AppColors.primaryPurpleLight
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              item.icon,
+                              size: 20,
+                              color: isActive 
+                                  ? AppColors.white 
+                                  : AppColors.gray600,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                item.title,
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: isActive
+                                      ? AppColors.white
+                                      : AppColors.textPrimary,
+                                  fontWeight: isActive
+                                      ? FontWeight.w600
+                                      : FontWeight.w500,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-            );
-          }),
+                );
+              }).toList(),
+            ),
+          ),
       ],
     );
   }

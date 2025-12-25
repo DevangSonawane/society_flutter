@@ -82,10 +82,13 @@ class _MakePaymentScreenState extends ConsumerState<MakePaymentScreen> {
       paidTo: _selectedType == 'Credit' && _recipientController.text.trim().isNotEmpty
           ? _recipientController.text.trim()
           : null,
+      source: TransactionSource.manual,
+      sourceId: _uuid.v4(), // Generate unique ID for manual transactions
     );
 
     try {
-      await ref.read(financeNotifierProvider.notifier).createTransaction(transaction);
+      // Add to manual transactions
+      ref.read(manualTransactionsProvider.notifier).addTransaction(transaction);
       
       if (!mounted) return;
 
@@ -180,9 +183,8 @@ class _MakePaymentScreenState extends ConsumerState<MakePaymentScreen> {
                         ),
                         const SizedBox(height: 24),
                         
-                        // ignore: deprecated_member_use
                         DropdownButtonFormField<String>(
-                          value: _selectedType,
+                          initialValue: _selectedType,
                           decoration: InputDecoration(
                             labelText: 'Transaction Type *',
                             border: OutlineInputBorder(

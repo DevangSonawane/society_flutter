@@ -9,14 +9,53 @@ class TransactionRepository {
     return SupabaseService.executeQuery<List<TransactionModel>>(
       context: 'getTransactions',
       query: () async {
-        final response = await SupabaseService.client
-            .from(_table)
-            .select()
-            .order('transaction_date', ascending: false);
-        
-        return (response as List)
-            .map((json) => TransactionModel.fromJson(json as Map<String, dynamic>))
-            .toList();
+        try {
+          // Try ordering by transaction_date first, fallback to created_at
+          dynamic response;
+          try {
+            response = await SupabaseService.client
+                .from(_table)
+                .select()
+                .order('transaction_date', ascending: false);
+          } catch (e) {
+            // If transaction_date doesn't exist, try created_at
+            LoggerService.warning('transaction_date column not found, trying created_at');
+            response = await SupabaseService.client
+                .from(_table)
+                .select()
+                .order('created_at', ascending: false);
+          }
+          
+          if (response == null) {
+            LoggerService.warning('getTransactions: Response is null');
+            return [];
+          }
+          
+          if (response is! List) {
+            LoggerService.warning('getTransactions: Response is not a list: ${response.runtimeType}');
+            return [];
+          }
+          
+          final responseList = response;
+          if (responseList.isEmpty) {
+            LoggerService.info('getTransactions: No transactions found');
+            return [];
+          }
+          
+          return responseList
+              .map((json) {
+                try {
+                  return TransactionModel.fromJson(json as Map<String, dynamic>);
+                } catch (e) {
+                  LoggerService.error('Error parsing transaction: $json', e);
+                  rethrow;
+                }
+              })
+              .toList();
+        } catch (e) {
+          LoggerService.error('Error in getTransactions query', e);
+          rethrow;
+        }
       },
     );
   }
@@ -25,11 +64,75 @@ class TransactionRepository {
     return SupabaseService.executeQuery<List<TransactionModel>>(
       context: 'getTransactionsByType',
       query: () async {
-        final response = await SupabaseService.client
-            .from(_table)
-            .select()
-            .eq('type', type.name)
-            .order('transaction_date', ascending: false);
+        dynamic response;
+        try {
+          response = await SupabaseService.client
+              .from(_table)
+              .select()
+              .eq('type', type.name)
+              .order('transaction_date', ascending: false);
+        } catch (e) {
+          LoggerService.warning('transaction_date column not found, trying created_at');
+          response = await SupabaseService.client
+              .from(_table)
+              .select()
+              .eq('type', type.name)
+              .order('created_at', ascending: false);
+        }
+        
+        return (response as List)
+            .map((json) => TransactionModel.fromJson(json as Map<String, dynamic>))
+            .toList();
+      },
+    );
+  }
+
+  Future<List<TransactionModel>> getTransactionsBySource(TransactionSource source) async {
+    return SupabaseService.executeQuery<List<TransactionModel>>(
+      context: 'getTransactionsBySource',
+      query: () async {
+        dynamic response;
+        try {
+          response = await SupabaseService.client
+              .from(_table)
+              .select()
+              .eq('source', source.name)
+              .order('transaction_date', ascending: false);
+        } catch (e) {
+          LoggerService.warning('transaction_date column not found, trying created_at');
+          response = await SupabaseService.client
+              .from(_table)
+              .select()
+              .eq('source', source.name)
+              .order('created_at', ascending: false);
+        }
+        
+        return (response as List)
+            .map((json) => TransactionModel.fromJson(json as Map<String, dynamic>))
+            .toList();
+      },
+    );
+  }
+
+  Future<List<TransactionModel>> getTransactionsByCategory(String category) async {
+    return SupabaseService.executeQuery<List<TransactionModel>>(
+      context: 'getTransactionsByCategory',
+      query: () async {
+        dynamic response;
+        try {
+          response = await SupabaseService.client
+              .from(_table)
+              .select()
+              .eq('category', category)
+              .order('transaction_date', ascending: false);
+        } catch (e) {
+          LoggerService.warning('transaction_date column not found, trying created_at');
+          response = await SupabaseService.client
+              .from(_table)
+              .select()
+              .eq('category', category)
+              .order('created_at', ascending: false);
+        }
         
         return (response as List)
             .map((json) => TransactionModel.fromJson(json as Map<String, dynamic>))

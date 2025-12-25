@@ -248,7 +248,21 @@ class DashboardScreen extends ConsumerWidget {
 
   Widget _buildKeyFeatures(BuildContext context) {
     final isMobile = Responsive.isMobile(context);
-    final crossAxisCount = isMobile ? 2 : 3;
+    final isTablet = Responsive.isTablet(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    // Responsive cross axis count
+    final crossAxisCount = isMobile ? 2 : (isTablet ? 3 : 4);
+    
+    // Responsive aspect ratio - adjust based on screen size and content
+    // Mobile: taller cards to accommodate content
+    // Tablet/Desktop: wider cards
+    final childAspectRatio = isMobile 
+        ? (screenWidth < 400 ? 0.85 : 0.9)  // Smaller phones need taller cards
+        : (isTablet ? 1.0 : 1.1);
+    
+    // Responsive spacing
+    final spacing = isMobile ? 12.0 : 16.0;
     
     final features = [
       {
@@ -303,7 +317,7 @@ class DashboardScreen extends ConsumerWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isMobile ? 16 : 24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -320,23 +334,29 @@ class DashboardScreen extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.star, color: AppColors.primaryPurple, size: 20),
-              const SizedBox(width: 8),
+              Icon(
+                Icons.star,
+                color: AppColors.primaryPurple,
+                size: isMobile ? 18 : 20,
+              ),
+              SizedBox(width: isMobile ? 6 : 8),
               Text(
                 'Key Features',
-                style: AppTextStyles.h3,
+                style: AppTextStyles.h3.copyWith(
+                  fontSize: isMobile ? 18 : null,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: isMobile ? 16 : 24),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: crossAxisCount,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 1.1,
+              crossAxisSpacing: spacing,
+              mainAxisSpacing: spacing,
+              childAspectRatio: childAspectRatio,
             ),
             itemCount: features.length,
             itemBuilder: (context, index) {
@@ -366,6 +386,10 @@ class DashboardScreen extends ConsumerWidget {
     required String description,
     required Color color,
   }) {
+    final isMobile = Responsive.isMobile(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 400;
+    
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -375,7 +399,7 @@ class DashboardScreen extends ConsumerWidget {
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(isMobile ? (isSmallScreen ? 12 : 14) : 16),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
@@ -386,40 +410,49 @@ class DashboardScreen extends ConsumerWidget {
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 24,
+              Flexible(
+                flex: 0,
+                child: Container(
+                  padding: EdgeInsets.all(isMobile ? (isSmallScreen ? 8 : 10) : 12),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    color: color,
+                    size: isMobile ? (isSmallScreen ? 20 : 22) : 24,
+                  ),
                 ),
               ),
-              const SizedBox(height: 12),
-              Text(
-                title,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+              SizedBox(height: isMobile ? (isSmallScreen ? 8 : 10) : 12),
+              Flexible(
+                child: Text(
+                  title,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                    fontSize: isMobile ? (isSmallScreen ? 12 : 13) : null,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 4),
-              Text(
-                description,
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
-                  fontSize: 11,
+              SizedBox(height: isMobile ? (isSmallScreen ? 3 : 4) : 4),
+              Flexible(
+                child: Text(
+                  description,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                    fontSize: isMobile ? (isSmallScreen ? 9 : 10) : 11,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

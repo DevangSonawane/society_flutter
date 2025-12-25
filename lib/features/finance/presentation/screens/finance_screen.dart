@@ -20,8 +20,9 @@ class FinanceScreen extends ConsumerStatefulWidget {
 
 class _FinanceScreenState extends ConsumerState<FinanceScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  String _selectedFilterType = 'All Type';
+  String _selectedCategory = 'All';
   String _searchQuery = '';
+  String _sortBy = 'Date'; // Date or Amount
 
   @override
   void initState() {
@@ -37,7 +38,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> with SingleTicker
 
   @override
   Widget build(BuildContext context) {
-    final transactionsAsync = ref.watch(transactionsProvider);
+    final transactionsAsync = ref.watch(allTransactionsProvider);
     
     return transactionsAsync.when(
       data: (transactions) => _buildContent(context, transactions),
@@ -58,17 +59,54 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> with SingleTicker
     final balance = totalCredits - totalDebits;
     
     // Filter transactions
-    final filteredCredits = credits.where((t) {
-      if (_selectedFilterType != 'All Type' && _selectedFilterType != 'Credit') return false;
-      if (_searchQuery.isEmpty) return true;
-      return t.description.toLowerCase().contains(_searchQuery.toLowerCase());
-    }).toList();
+    List<TransactionModel> filterTransactions(List<TransactionModel> transactions) {
+      return transactions.where((t) {
+        // Category filter
+        if (_selectedCategory != 'All') {
+          final categoryMap = {
+            'Maintenance': 'maintenance',
+            'Vendor': 'vendor',
+            'Deposit': 'deposit',
+            'Room Charge': 'room_charge',
+            'Manual': 'manual',
+          };
+          final expectedCategory = categoryMap[_selectedCategory];
+          if (expectedCategory != null && t.category != expectedCategory) {
+            return false;
+          }
+        }
+        
+        // Search filter
+        if (_searchQuery.isNotEmpty) {
+          final query = _searchQuery.toLowerCase();
+          // Match if any field contains the query (OR logic)
+          final matchesDescription = t.description.toLowerCase().contains(query);
+          final matchesReference = t.referenceNumber?.toLowerCase().contains(query) ?? false;
+          final matchesPaidBy = t.paidBy?.toLowerCase().contains(query) ?? false;
+          final matchesPaidTo = t.paidTo?.toLowerCase().contains(query) ?? false;
+          
+          if (!matchesDescription && !matchesReference && !matchesPaidBy && !matchesPaidTo) {
+            return false;
+          }
+        }
+        
+        return true;
+      }).toList();
+    }
     
-    final filteredDebits = debits.where((t) {
-      if (_selectedFilterType != 'All Type' && _selectedFilterType != 'Debit') return false;
-      if (_searchQuery.isEmpty) return true;
-      return t.description.toLowerCase().contains(_searchQuery.toLowerCase());
-    }).toList();
+    // Sort transactions
+    List<TransactionModel> sortTransactions(List<TransactionModel> transactions) {
+      final sorted = List<TransactionModel>.from(transactions);
+      if (_sortBy == 'Date') {
+        sorted.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      } else if (_sortBy == 'Amount') {
+        sorted.sort((a, b) => b.amount.compareTo(a.amount));
+      }
+      return sorted;
+    }
+    
+    final filteredCredits = sortTransactions(filterTransactions(credits));
+    final filteredDebits = sortTransactions(filterTransactions(debits));
     
     return Container(
       color: AppColors.backgroundLight,
@@ -195,23 +233,52 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> with SingleTicker
                         },
                       ),
                       const SizedBox(height: 12),
-                      // ignore: deprecated_member_use
-                      DropdownButtonFormField<String>(
-                        value: _selectedFilterType,
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          filled: true,
-                          fillColor: AppColors.white,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        ),
-                        items: ['All Type', 'Credit', 'Debit']
-                            .map((type) => DropdownMenuItem(value: type, child: Text(type)))
-                            .toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedFilterType = value!;
-                          });
-                        },
+                      Row(
+                        children: [
+                          Expanded(
+                            child: // ignore: deprecated_member_use
+                            DropdownButtonFormField<String>(
+                              initialValue: _selectedCategory,
+                              decoration: const InputDecoration(
+                                border: OutlineInputBorder(),
+                                filled: true,
+                                fillColor: AppColors.white,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                labelText: 'Category',
+                              ),
+                              items: ['All', 'Maintenance', 'Vendor', 'Deposit', 'Room Charge', 'Manual']
+                                  .map((cat) => DropdownMenuItem(value: cat, child: Text(cat)))
+                                  .toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedCategory = value!;
+                                });
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: // ignore: deprecated_member_use
+                            DropdownButtonFormField<String>(
+                              initialValue: _sortBy,
+                              decoration: const InputDecoration(
+                                border: OutlineInputBorder(),
+                                filled: true,
+                                fillColor: AppColors.white,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                labelText: 'Sort By',
+                              ),
+                              items: ['Date', 'Amount']
+                                  .map((sort) => DropdownMenuItem(value: sort, child: Text(sort)))
+                                  .toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  _sortBy = value!;
+                                });
+                              },
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   )
@@ -237,14 +304,30 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> with SingleTicker
                       ),
                       const SizedBox(width: 16),
                       DropdownButton<String>(
-                        value: _selectedFilterType,
-                        items: ['All Type', 'Credit', 'Debit']
-                            .map((type) => DropdownMenuItem(value: type, child: Text(type)))
+                        value: _selectedCategory,
+                        items: ['All', 'Maintenance', 'Vendor', 'Deposit', 'Room Charge', 'Manual']
+                            .map((cat) => DropdownMenuItem(value: cat, child: Text(cat)))
                             .toList(),
                         onChanged: (value) {
-                          setState(() {
-                            _selectedFilterType = value!;
-                          });
+                          if (value != null) {
+                            setState(() {
+                              _selectedCategory = value;
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(width: 16),
+                      DropdownButton<String>(
+                        value: _sortBy,
+                        items: ['Date', 'Amount']
+                            .map((sort) => DropdownMenuItem(value: sort, child: Text(sort)))
+                            .toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _sortBy = value;
+                            });
+                          }
                         },
                       ),
                     ],
@@ -304,18 +387,124 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> with SingleTicker
         return Card(
           margin: const EdgeInsets.only(bottom: 8),
           child: ListTile(
-            title: Text(transaction.description),
-            subtitle: Text(AppFormatters.dateShort(transaction.createdAt)),
-            trailing: Text(
-              AppFormatters.currency(transaction.amount),
-              style: TextStyle(
-                color: type == TransactionType.credit ? AppColors.successGreen : AppColors.errorRed,
-                fontWeight: FontWeight.bold,
-              ),
+            leading: _buildSourceIcon(transaction.source),
+            title: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    transaction.description,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                if (transaction.source != null) ...[
+                  const SizedBox(width: 8),
+                  _buildSourceBadge(transaction.source!),
+                ],
+              ],
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 4),
+                Text(
+                  AppFormatters.dateShort(transaction.createdAt),
+                  style: AppTextStyles.bodySmall,
+                ),
+                if (transaction.category != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    transaction.category!.replaceAll('_', ' ').toUpperCase(),
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  AppFormatters.currency(transaction.amount),
+                  style: TextStyle(
+                    color: type == TransactionType.credit ? AppColors.successGreen : AppColors.errorRed,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                if (transaction.referenceNumber != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    transaction.referenceNumber!.length > 8 
+                        ? 'Ref: ${transaction.referenceNumber!.substring(0, 8)}...'
+                        : 'Ref: ${transaction.referenceNumber!}',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildSourceIcon(TransactionSource? source) {
+    if (source == null) return const Icon(Icons.receipt, color: AppColors.textSecondary);
+    
+    switch (source) {
+      case TransactionSource.maintenance:
+        return const Icon(Icons.home, color: AppColors.primaryPurple);
+      case TransactionSource.vendor:
+        return const Icon(Icons.business, color: AppColors.infoBlue);
+      case TransactionSource.deposit:
+        return const Icon(Icons.account_balance_wallet, color: AppColors.warningYellow);
+      case TransactionSource.roomCharge:
+        return const Icon(Icons.room, color: AppColors.successGreen);
+      case TransactionSource.manual:
+        return const Icon(Icons.payment, color: AppColors.textSecondary);
+    }
+  }
+
+  Widget _buildSourceBadge(TransactionSource source) {
+    final labels = {
+      TransactionSource.maintenance: 'Maint',
+      TransactionSource.vendor: 'Vendor',
+      TransactionSource.deposit: 'Deposit',
+      TransactionSource.roomCharge: 'Room',
+      TransactionSource.manual: 'Manual',
+    };
+    
+    final colors = {
+      TransactionSource.maintenance: AppColors.primaryPurple,
+      TransactionSource.vendor: AppColors.infoBlue,
+      TransactionSource.deposit: AppColors.warningYellow,
+      TransactionSource.roomCharge: AppColors.successGreen,
+      TransactionSource.manual: AppColors.textSecondary,
+    };
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: colors[source]!.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: colors[source]!.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        labels[source]!,
+        style: TextStyle(
+          color: colors[source],
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 
@@ -329,6 +518,13 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> with SingleTicker
   }
 
   Widget _buildError(BuildContext context, Object error) {
+    final errorMessage = error.toString();
+    final isAuthError = errorMessage.toLowerCase().contains('authentication') ||
+        errorMessage.toLowerCase().contains('permission') ||
+        errorMessage.toLowerCase().contains('session');
+    final isTableError = errorMessage.toLowerCase().contains('relation') ||
+        errorMessage.toLowerCase().contains('does not exist');
+    
     return Container(
       color: AppColors.backgroundLight,
       child: Center(
@@ -344,10 +540,34 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> with SingleTicker
                 style: AppTextStyles.h3,
               ),
               const SizedBox(height: 8),
-              Text(
-                error.toString(),
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-                textAlign: TextAlign.center,
+              if (isAuthError)
+                Text(
+                  'Authentication error. Please check your login status.',
+                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.errorRed),
+                  textAlign: TextAlign.center,
+                )
+              else if (isTableError)
+                Text(
+                  'Database table not found. Please check your database configuration.',
+                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.errorRed),
+                  textAlign: TextAlign.center,
+                )
+              else
+                Text(
+                  errorMessage.length > 200 
+                      ? '${errorMessage.substring(0, 200)}...'
+                      : errorMessage,
+                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                  textAlign: TextAlign.center,
+                ),
+              const SizedBox(height: 24),
+              CustomButton(
+                text: 'Retry',
+                icon: Icons.refresh,
+                onPressed: () {
+                  // Refresh the provider
+                  ref.invalidate(transactionsProvider);
+                },
               ),
             ],
           ),
