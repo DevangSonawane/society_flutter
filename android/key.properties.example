@@ -1,0 +1,5 @@
+storePassword=your-keystore-password
+keyPassword=your-key-password
+keyAlias=scasa-key
+storeFile=../keystore.jks
+

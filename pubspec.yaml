@@ -1,0 +1,68 @@
+name: scasa_flutter_app
+description: SCASA - Society Comprehensive Administrative Solution Application
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management
+  flutter_riverpod: ^2.4.9
+  
+  # UI Components
+  google_fonts: ^6.1.0
+  intl: ^0.19.0
+  
+  # Utilities
+  uuid: ^4.2.2
+  equatable: ^2.0.5
+  logger: ^2.0.2+1
+  sentry_flutter: ^8.14.2
+  crypto: ^3.0.3
+  
+  # Icons
+  cupertino_icons: ^1.0.8
+  supabase_flutter: ^2.12.0
+  
+  # Animation packages
+  flutter_animate: ^4.5.0
+  lottie: ^3.1.0
+  shimmer: ^3.0.0
+  
+  # Interaction packages
+  flutter_slidable: ^3.0.1
+  vibration: ^3.1.5
+  
+  # Visual effects
+  confetti: ^0.7.0
+  
+  # UI Components
+  flutter_spinkit: ^5.2.0
+  page_transition: ^2.1.0
+  
+  # File operations
+  pdf: ^3.10.0
+  path_provider: ^2.1.0
+  share_plus: ^7.0.0
+  file_picker: ^8.0.0
+  image_picker: ^1.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.8
+  mockito: ^5.4.4
+  integration_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - .env
