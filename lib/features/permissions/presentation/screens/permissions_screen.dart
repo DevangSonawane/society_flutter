@@ -9,6 +9,8 @@ import '../../../../shared/widgets/responsive_statistics_grid.dart';
 import '../../../../shared/widgets/animations/shimmer_loading.dart';
 import '../../../../shared/widgets/animations/fade_in_widget.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/permissions.dart';
+import '../../../../features/auth/providers/auth_provider.dart';
 import '../../providers/permissions_provider.dart';
 import 'add_permission_screen.dart';
 import 'edit_permission_screen.dart';
@@ -27,11 +29,18 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
   @override
   Widget build(BuildContext context) {
     final permissionsAsync = ref.watch(permissionsNotifierProvider);
+    final user = ref.watch(authProvider);
+    final userRole = Permissions.getUserRole(user);
     final isMobile = Responsive.isMobile(context);
     final padding = Responsive.getScreenPadding(context);
 
     return permissionsAsync.when(
-      data: (permissions) {
+      data: (allPermissions) {
+        // Filter permissions for residents (only their own)
+        final permissions = userRole == UserRole.resident && user?.flatNo != null
+            ? allPermissions.where((p) => p.flatNumber == user!.flatNo).toList()
+            : allPermissions;
+        
         final thisMonth = permissions.where((p) {
           final now = DateTime.now();
           return p.createdAt.month == now.month && p.createdAt.year == now.year;

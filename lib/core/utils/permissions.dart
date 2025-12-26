@@ -31,8 +31,14 @@ class Permissions {
         // Receptionist can view most modules but not Users
         return module != 'users' && module != 'vendors' && module != 'helpers';
       case UserRole.resident:
-        // Resident can only view own data
-        return module == 'complaints' || module == 'permissions' || module == 'dashboard';
+        // Residents can view: maintenance_payments, notice_board, complaints, permissions, helpers, dashboard, residents (own profile)
+        return module == 'maintenance_payments' ||
+               module == 'notice_board' ||
+               module == 'complaints' ||
+               module == 'permissions' ||
+               module == 'helpers' ||
+               module == 'dashboard' ||
+               module == 'residents';
     }
   }
 
@@ -45,8 +51,10 @@ class Permissions {
         // Receptionist can create complaints and permissions
         return module == 'complaints' || module == 'permissions';
       case UserRole.resident:
-        // Resident can create complaints and permission requests
-        return module == 'complaints' || module == 'permissions';
+        // Resident can create: complaints, permissions, helpers (assign to their flat)
+        return module == 'complaints' || 
+               module == 'permissions' || 
+               module == 'helpers';
     }
   }
 
@@ -98,6 +106,11 @@ class Permissions {
 
   /// Check if user can view all maintenance payments
   static bool canViewAllPayments(UserRole role) {
+    return role == UserRole.admin || role == UserRole.receptionist;
+  }
+
+  /// Check if user can add notices
+  static bool canAddNotice(UserRole role) {
     return role == UserRole.admin || role == UserRole.receptionist;
   }
 

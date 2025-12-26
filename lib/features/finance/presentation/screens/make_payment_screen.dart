@@ -11,6 +11,9 @@ import '../../../../core/utils/validators.dart';
 import '../../../../core/utils/haptic_helper.dart';
 import '../../data/models/transaction_model.dart';
 import '../../providers/finance_provider.dart';
+import '../../data/models/billing_history_model.dart';
+import '../../providers/billing_history_provider.dart';
+import '../../../vendors/providers/vendors_provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart';
 
@@ -27,8 +30,12 @@ class _MakePaymentScreenState extends ConsumerState<MakePaymentScreen> {
   final _amountController = TextEditingController();
   final _recipientController = TextEditingController();
   final _referenceController = TextEditingController();
+  final _paymentModeController = TextEditingController();
+  final _paymentDetailsController = TextEditingController();
   
   String _selectedType = 'Debit';
+  String _paymentCategory = 'Manual'; // 'Manual' or 'Vendor'
+  String? _selectedVendorId;
   DateTime _paymentDate = DateTime.now();
   bool _isLoading = false;
   final _uuid = const Uuid();
@@ -39,6 +46,8 @@ class _MakePaymentScreenState extends ConsumerState<MakePaymentScreen> {
     _amountController.dispose();
     _recipientController.dispose();
     _referenceController.dispose();
+    _paymentModeController.dispose();
+    _paymentDetailsController.dispose();
     super.dispose();
   }
 
@@ -62,40 +71,77 @@ class _MakePaymentScreenState extends ConsumerState<MakePaymentScreen> {
       return;
     }
 
+    if (_paymentCategory == 'Vendor' && _selectedVendorId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please select a vendor'),
+          backgroundColor: AppColors.warningYellow,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
 
     final amount = double.tryParse(_amountController.text.trim()) ?? 0.0;
 
-    final transaction = TransactionModel(
-      id: _uuid.v4(),
-      description: _descriptionController.text.trim(),
-      amount: amount,
-      type: _selectedType == 'Credit' ? TransactionType.credit : TransactionType.debit,
-      createdAt: _paymentDate,
-      referenceNumber: _referenceController.text.trim().isNotEmpty
-          ? _referenceController.text.trim()
-          : null,
-      paidBy: _selectedType == 'Debit' && _recipientController.text.trim().isNotEmpty
-          ? _recipientController.text.trim()
-          : null,
-      paidTo: _selectedType == 'Credit' && _recipientController.text.trim().isNotEmpty
-          ? _recipientController.text.trim()
-          : null,
-      source: TransactionSource.manual,
-      sourceId: _uuid.v4(), // Generate unique ID for manual transactions
-    );
-
     try {
-      // Add to manual transactions
-      ref.read(manualTransactionsProvider.notifier).addTransaction(transaction);
+      if (_paymentCategory == 'Vendor') {
+        // Record vendor payment to billing_history
+        final payment = BillingHistoryModel(
+          id: _uuid.v4(),
+          vendorId: _selectedVendorId,
+          invoiceId: null, // Can be linked later if needed
+          amountPaid: amount,
+          paymentDate: _paymentDate,
+          paymentMode: _paymentModeController.text.trim().isNotEmpty
+              ? _paymentModeController.text.trim()
+              : null,
+          paymentDetails: _paymentDetailsController.text.trim().isNotEmpty
+              ? _paymentDetailsController.text.trim()
+              : _descriptionController.text.trim(),
+          paymentTimestamp: DateTime.now(),
+          createdAt: DateTime.now(),
+        );
+
+        await ref.read(billingHistoryNotifierProvider.notifier).recordPayment(payment);
+        
+        // Refresh vendors to show updated balances
+        ref.invalidate(vendorsNotifierProvider);
+      } else {
+        // Create manual transaction
+        final transaction = TransactionModel(
+          id: _uuid.v4(),
+          description: _descriptionController.text.trim(),
+          amount: amount,
+          type: _selectedType == 'Credit' ? TransactionType.credit : TransactionType.debit,
+          createdAt: _paymentDate,
+          referenceNumber: _referenceController.text.trim().isNotEmpty
+              ? _referenceController.text.trim()
+              : null,
+          paidBy: _selectedType == 'Debit' && _recipientController.text.trim().isNotEmpty
+              ? _recipientController.text.trim()
+              : null,
+          paidTo: _selectedType == 'Credit' && _recipientController.text.trim().isNotEmpty
+              ? _recipientController.text.trim()
+              : null,
+          source: TransactionSource.manual,
+          sourceId: _uuid.v4(),
+        );
+
+        ref.read(manualTransactionsProvider.notifier).addTransaction(transaction);
+      }
       
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Payment recorded successfully'),
+          content: Text(_paymentCategory == 'Vendor' 
+              ? 'Vendor payment recorded successfully'
+              : 'Payment recorded successfully'),
           backgroundColor: AppColors.successGreen,
           behavior: SnackBarBehavior.floating,
         ),
@@ -185,9 +231,9 @@ class _MakePaymentScreenState extends ConsumerState<MakePaymentScreen> {
                         const SizedBox(height: 24),
                         
                         DropdownButtonFormField<String>(
-                          initialValue: _selectedType,
+                          value: _paymentCategory,
                           decoration: InputDecoration(
-                            labelText: 'Transaction Type *',
+                            labelText: 'Payment Category *',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -195,20 +241,94 @@ class _MakePaymentScreenState extends ConsumerState<MakePaymentScreen> {
                             fillColor: AppColors.white,
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           ),
-                          items: ['Credit', 'Debit'].map((type) {
+                          items: ['Manual', 'Vendor'].map((category) {
                             return DropdownMenuItem(
-                              value: type,
-                              child: Text(type),
+                              value: category,
+                              child: Text(category),
                             );
                           }).toList(),
                           onChanged: (value) {
                             setState(() {
-                              _selectedType = value!;
+                              _paymentCategory = value!;
+                              if (value == 'Manual') {
+                                _selectedVendorId = null;
+                              }
                             });
                             HapticHelper.selection();
                           },
                         ),
                         const SizedBox(height: 16),
+                        
+                        if (_paymentCategory == 'Vendor') ...[
+                          Consumer(
+                            builder: (context, ref, child) {
+                              final vendorsAsync = ref.watch(vendorsProvider);
+                              return vendorsAsync.when(
+                                data: (vendors) {
+                                  return DropdownButtonFormField<String>(
+                                    value: _selectedVendorId,
+                                    decoration: InputDecoration(
+                                      labelText: 'Select Vendor *',
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      filled: true,
+                                      fillColor: AppColors.white,
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                    ),
+                                    items: vendors.map((vendor) {
+                                      return DropdownMenuItem(
+                                        value: vendor.id,
+                                        child: Text(vendor.vendorName),
+                                      );
+                                    }).toList(),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _selectedVendorId = value;
+                                      });
+                                      HapticHelper.selection();
+                                    },
+                                    validator: (value) {
+                                      if (_paymentCategory == 'Vendor' && (value == null || value.isEmpty)) {
+                                        return 'Please select a vendor';
+                                      }
+                                      return null;
+                                    },
+                                  );
+                                },
+                                loading: () => const CircularProgressIndicator(),
+                                error: (error, stack) => Text('Error loading vendors: $error'),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                        ] else ...[
+                          DropdownButtonFormField<String>(
+                            value: _selectedType,
+                            decoration: InputDecoration(
+                              labelText: 'Transaction Type *',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              filled: true,
+                              fillColor: AppColors.white,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            ),
+                            items: ['Credit', 'Debit'].map((type) {
+                              return DropdownMenuItem(
+                                value: type,
+                                child: Text(type),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedType = value!;
+                              });
+                              HapticHelper.selection();
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                        ],
                         
                         CustomTextField(
                           label: 'Description *',
@@ -234,16 +354,31 @@ class _MakePaymentScreenState extends ConsumerState<MakePaymentScreen> {
                         ),
                         const SizedBox(height: 16),
                         
-                        CustomTextField(
-                          label: 'Recipient/Payer',
-                          controller: _recipientController,
-                        ),
+                        if (_paymentCategory == 'Manual') ...[
+                          CustomTextField(
+                            label: 'Recipient/Payer',
+                            controller: _recipientController,
+                          ),
+                          const SizedBox(height: 16),
+                          CustomTextField(
+                            label: 'Reference Number',
+                            controller: _referenceController,
+                          ),
+                        ] else ...[
+                          CustomTextField(
+                            label: 'Payment Mode',
+                            controller: _paymentModeController,
+                            hint: 'e.g., UPI, Cash, Bank Transfer',
+                          ),
+                          const SizedBox(height: 16),
+                          CustomTextField(
+                            label: 'Payment Details',
+                            controller: _paymentDetailsController,
+                            hint: 'Transaction ID, cheque number, etc.',
+                            maxLines: 2,
+                          ),
+                        ],
                         const SizedBox(height: 16),
-                        
-                        CustomTextField(
-                          label: 'Reference Number',
-                          controller: _referenceController,
-                        ),
                         const SizedBox(height: 16),
                         
                         GestureDetector(

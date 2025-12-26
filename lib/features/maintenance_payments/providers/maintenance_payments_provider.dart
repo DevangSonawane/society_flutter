@@ -80,3 +80,9 @@ final maintenancePaymentsNotifierProvider = StateNotifierProvider<MaintenancePay
   return MaintenancePaymentsNotifier(repository);
 });
 
+/// Provider for resident's own maintenance payments (filtered by flat number)
+final residentMaintenancePaymentsProvider = FutureProvider.family<List<MaintenancePaymentModel>, String>((ref, flatNumber) {
+  final repository = ref.watch(maintenancePaymentRepositoryProvider);
+  return repository.getPaymentsByFlatNumber(flatNumber);
+});
+

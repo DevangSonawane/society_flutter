@@ -9,6 +9,8 @@ import '../../../../shared/widgets/responsive_statistics_grid.dart';
 import '../../../../shared/widgets/animations/shimmer_loading.dart';
 import '../../../../shared/widgets/animations/fade_in_widget.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/permissions.dart';
+import '../../../../features/auth/providers/auth_provider.dart';
 import '../../providers/complaints_provider.dart';
 import 'add_complaint_screen.dart';
 import 'edit_complaint_screen.dart';
@@ -27,11 +29,18 @@ class _ComplaintsScreenState extends ConsumerState<ComplaintsScreen> {
   @override
   Widget build(BuildContext context) {
     final complaintsAsync = ref.watch(complaintsNotifierProvider);
+    final user = ref.watch(authProvider);
+    final userRole = Permissions.getUserRole(user);
     final isMobile = Responsive.isMobile(context);
     final padding = Responsive.getScreenPadding(context);
 
     return complaintsAsync.when(
-      data: (complaints) {
+      data: (allComplaints) {
+        // Filter complaints for residents (only their own)
+        final complaints = userRole == UserRole.resident && user?.flatNo != null
+            ? allComplaints.where((c) => c.flatNumber == user!.flatNo).toList()
+            : allComplaints;
+        
         final thisMonth = complaints.where((c) {
           final now = DateTime.now();
           return c.createdAt.month == now.month && c.createdAt.year == now.year;

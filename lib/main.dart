@@ -11,6 +11,9 @@ import 'shared/widgets/app_header.dart';
 import 'features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'features/residents/presentation/screens/residents_list_screen.dart';
 import 'features/residents/presentation/screens/create_resident_screen.dart';
+import 'features/residents/presentation/screens/resident_profile_screen.dart';
+import 'features/maintenance_payments/presentation/screens/resident_maintenance_screen.dart';
+import 'core/utils/permissions.dart';
 import 'features/maintenance_payments/presentation/screens/maintenance_payments_screen.dart';
 import 'features/finance/presentation/screens/finance_screen.dart';
 import 'features/complaints/presentation/screens/complaints_screen.dart';
@@ -27,7 +30,6 @@ import 'features/auth/presentation/screens/auth_gate.dart';
 import 'core/config/app_config.dart';
 import 'core/services/crash_reporting_service.dart';
 import 'shared/widgets/error_boundary.dart';
-import 'core/routes/page_transitions.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -165,6 +167,32 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
   }
 
   Widget _getCurrentScreen() {
+    final user = ref.read(authProvider);
+    final userRole = Permissions.getUserRole(user);
+    
+    // For residents, use different screens
+    if (userRole == UserRole.resident) {
+      switch (_currentRoute) {
+        case AppConstants.dashboardRoute:
+          return const DashboardScreen();
+        case AppConstants.residentsRoute:
+          return const ResidentProfileScreen(); // Show their profile instead of list
+        case AppConstants.maintenancePaymentsRoute:
+          return const ResidentMaintenanceScreen(); // Resident-specific screen
+        case AppConstants.noticeBoardRoute:
+          return const NoticeBoardScreen(); // Read-only
+        case AppConstants.complaintsRoute:
+          return const ComplaintsScreen(); // Filtered to their complaints
+        case AppConstants.permissionsRoute:
+          return const PermissionsScreen(); // Filtered to their permissions
+        case AppConstants.helpersRoute:
+          return const HelpersScreen(); // Filtered to their flat
+        default:
+          return const DashboardScreen();
+      }
+    }
+    
+    // Admin/Receptionist screens (existing code)
     switch (_currentRoute) {
       case AppConstants.dashboardRoute:
         return const DashboardScreen();

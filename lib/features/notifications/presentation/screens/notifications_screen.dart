@@ -177,10 +177,26 @@ class NotificationsScreen extends ConsumerWidget {
             );
           },
         ),
-        error: (error, stack) => ErrorStateWidget(
-          message: error.toString(),
-          onRetry: () => ref.refresh(notificationsNotifierProvider),
-        ),
+        error: (error, stack) {
+          // Check if it's a table not found error
+          final errorStr = error.toString().toLowerCase();
+          if (errorStr.contains('does not exist') || 
+              errorStr.contains('not found') ||
+              errorStr.contains('schema cache') ||
+              errorStr.contains('could not find the table') ||
+              errorStr.contains('public.notifications') ||
+              errorStr.contains('public.notification')) {
+            return EmptyStateWidget(
+              icon: Icons.notifications_off,
+              title: 'Notifications Not Available',
+              message: 'The notifications feature requires a database table to be set up. Please contact your administrator.',
+            );
+          }
+          return ErrorStateWidget(
+            message: error.toString(),
+            onRetry: () => ref.refresh(notificationsNotifierProvider),
+          );
+        },
       ),
     );
   }

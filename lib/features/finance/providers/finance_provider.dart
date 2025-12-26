@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/transaction_model.dart';
+import '../data/models/vendor_invoice_model.dart';
+import '../data/models/billing_history_model.dart';
 import '../services/finance_aggregator_service.dart';
 import '../../maintenance_payments/providers/maintenance_payments_provider.dart';
 import '../../maintenance_payments/data/models/maintenance_payment_model.dart';
@@ -9,28 +11,38 @@ import '../../expenses_charges/providers/deposits_provider.dart';
 import '../../expenses_charges/data/models/deposit_model.dart';
 import '../../expenses_charges/providers/society_rooms_provider.dart';
 import '../../expenses_charges/data/models/society_room_model.dart';
+import 'vendor_invoices_provider.dart';
+import 'billing_history_provider.dart';
 
 /// Aggregates transactions from all sources (maintenance, vendors, deposits, rooms)
 final transactionsProvider = FutureProvider<List<TransactionModel>>((ref) async {
   // Fetch data from all sources
   final maintenancePaymentsAsync = ref.watch(maintenancePaymentsProvider);
+  final vendorInvoicesAsync = ref.watch(vendorInvoicesProvider);
+  final billingHistoryAsync = ref.watch(billingHistoryProvider);
   final vendorsAsync = ref.watch(vendorsProvider);
   final depositsAsync = ref.watch(depositsProvider);
   final roomsAsync = ref.watch(societyRoomsProvider);
   
   // Extract data from AsyncValue, handling loading and errors
   List<MaintenancePaymentModel> maintenancePayments = [];
+  List<VendorInvoiceModel> vendorInvoices = [];
+  List<BillingHistoryModel> billingHistory = [];
   List<VendorModel> vendors = [];
   List<DepositModel> deposits = [];
   List<SocietyRoomModel> rooms = [];
   
   maintenancePaymentsAsync.whenData((data) => maintenancePayments = data);
+  vendorInvoicesAsync.whenData((data) => vendorInvoices = data);
+  billingHistoryAsync.whenData((data) => billingHistory = data);
   vendorsAsync.whenData((data) => vendors = data);
   depositsAsync.whenData((data) => deposits = data);
   roomsAsync.whenData((data) => rooms = data);
   
   // If any are still loading, return empty list (will be updated when data loads)
   if (maintenancePaymentsAsync.isLoading || 
+      vendorInvoicesAsync.isLoading ||
+      billingHistoryAsync.isLoading ||
       vendorsAsync.isLoading || 
       depositsAsync.isLoading || 
       roomsAsync.isLoading) {
@@ -40,6 +52,12 @@ final transactionsProvider = FutureProvider<List<TransactionModel>>((ref) async 
   // If any have errors, propagate the first error
   if (maintenancePaymentsAsync.hasError) {
     throw maintenancePaymentsAsync.error!;
+  }
+  if (vendorInvoicesAsync.hasError) {
+    throw vendorInvoicesAsync.error!;
+  }
+  if (billingHistoryAsync.hasError) {
+    throw billingHistoryAsync.error!;
   }
   if (vendorsAsync.hasError) {
     throw vendorsAsync.error!;
@@ -54,6 +72,8 @@ final transactionsProvider = FutureProvider<List<TransactionModel>>((ref) async 
   // Aggregate all transactions
   return FinanceAggregatorService.aggregateTransactions(
     maintenancePayments: maintenancePayments,
+    vendorInvoices: vendorInvoices,
+    billingHistory: billingHistory,
     vendors: vendors,
     deposits: deposits,
     rooms: rooms,

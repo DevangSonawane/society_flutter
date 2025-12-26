@@ -8,6 +8,8 @@ import '../../../../shared/widgets/custom_button.dart';
 import '../../../../shared/widgets/responsive_statistics_grid.dart';
 import '../../../../shared/widgets/animations/shimmer_loading.dart';
 import '../../../../shared/widgets/animations/fade_in_widget.dart';
+import '../../../../core/utils/permissions.dart';
+import '../../../../features/auth/providers/auth_provider.dart';
 import '../../providers/helpers_provider.dart';
 import 'add_helper_screen.dart';
 import 'edit_helper_screen.dart';
@@ -26,11 +28,18 @@ class _HelpersScreenState extends ConsumerState<HelpersScreen> {
   @override
   Widget build(BuildContext context) {
     final helpersAsync = ref.watch(helpersNotifierProvider);
+    final user = ref.watch(authProvider);
+    final userRole = Permissions.getUserRole(user);
     final isMobile = Responsive.isMobile(context);
     final padding = Responsive.getScreenPadding(context);
 
     return helpersAsync.when(
-      data: (helpers) {
+      data: (allHelpers) {
+        // Filter helpers for residents (only those assigned to their flat)
+        final helpers = userRole == UserRole.resident && user?.flatNo != null
+            ? allHelpers.where((h) => h.assignedFlats.contains(user!.flatNo)).toList()
+            : allHelpers;
+        
         final totalMen = helpers.where((h) => h.gender == 'Male').length;
         final totalWomen = helpers.where((h) => h.gender == 'Female').length;
         

@@ -14,6 +14,8 @@ import '../../../../shared/widgets/table_action_buttons.dart';
 import '../../../../shared/widgets/error_state_widget.dart';
 import '../../../../shared/widgets/empty_state_widget.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/permissions.dart';
+import '../../../../features/auth/providers/auth_provider.dart';
 import '../../data/models/notice_model.dart';
 import '../../providers/notices_provider.dart';
 import 'add_notice_screen.dart';
@@ -125,6 +127,9 @@ class _NoticeBoardScreenState extends ConsumerState<NoticeBoardScreen> {
   @override
   Widget build(BuildContext context) {
     final noticesAsync = ref.watch(noticesNotifierProvider);
+    final user = ref.watch(authProvider);
+    final userRole = Permissions.getUserRole(user);
+    final canAddNotice = Permissions.canAddNotice(userRole);
     final isMobile = Responsive.isMobile(context);
     final padding = Responsive.getScreenPadding(context);
 
@@ -167,22 +172,24 @@ class _NoticeBoardScreenState extends ConsumerState<NoticeBoardScreen> {
                               color: AppColors.textSecondary,
                             ),
                           ),
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            width: double.infinity,
-                            child: CustomButton(
-                              text: 'Create Notice',
-                              icon: Icons.add,
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const AddNoticeScreen(),
-                                  ),
-                                );
-                              },
+                          if (canAddNotice) ...[
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              child: CustomButton(
+                                text: 'Create Notice',
+                                icon: Icons.add,
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const AddNoticeScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
-                          ),
+                          ],
                         ],
                       )
                     : Row(
@@ -201,18 +208,19 @@ class _NoticeBoardScreenState extends ConsumerState<NoticeBoardScreen> {
                               ),
                             ],
                           ),
-                          CustomButton(
-                            text: 'Create Notice',
-                            icon: Icons.add,
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const AddNoticeScreen(),
-                                ),
-                              );
-                            },
-                          ),
+                          if (canAddNotice)
+                            CustomButton(
+                              text: 'Create Notice',
+                              icon: Icons.add,
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const AddNoticeScreen(),
+                                  ),
+                                );
+                              },
+                            ),
                         ],
                       ),
                 const SizedBox(height: 24),

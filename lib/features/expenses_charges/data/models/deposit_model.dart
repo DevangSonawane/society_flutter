@@ -52,7 +52,7 @@ class DepositModel extends Equatable {
       id: json['id'] as String,
       residentId: json['resident_id'] as String?,
       flatNumber: json['flat_number'] as String,
-      amount: (json['amount'] as num).toDouble(),
+      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
       depositDate: DateTime.parse(json['deposit_date'] as String),
       status: _depositStatusFromString(json['status'] as String? ?? 'pending'),
       notes: json['notes'] as String?,

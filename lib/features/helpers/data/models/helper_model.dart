@@ -38,8 +38,12 @@ class HelperModel extends Equatable {
   String? get type => helperType;
   
   List<String> get assignedFlats {
-    if (flatDetails != null && flatDetails is List) {
-      return (flatDetails as List).map((e) => e.toString()).toList();
+    // Handle flatDetails that might be stored as a list in a map wrapper
+    if (flatDetails != null) {
+      // Check if it's a map with a '_list' key (converted from List in database)
+      if (flatDetails!.containsKey('_list') && flatDetails!['_list'] is List) {
+        return (flatDetails!['_list'] as List).map((e) => e.toString()).toList();
+      }
     }
     return rooms;
   }
@@ -79,10 +83,36 @@ class HelperModel extends Equatable {
           : null,
       helperWork: json['helper_work'] as String?,
       photoUrl: json['photo_url'] as String?,
-      flatDetails: json['flat_details'] as Map<String, dynamic>?,
+      flatDetails: _parseFlatDetails(json['flat_details']),
       wing: json['wing'] as String?,
       secretary: json['secretary'] as String?,
     );
+  }
+
+  /// Parse flat_details which can be either a Map, List, or null
+  static Map<String, dynamic>? _parseFlatDetails(dynamic value) {
+    if (value == null) return null;
+    
+    // If it's already a Map, return it
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+    
+    // If it's a List, convert it to a Map with indexed keys
+    // This preserves the data structure while allowing the model to work
+    if (value is List) {
+      // For lists, we'll store it as a map with a special key
+      // The assignedFlats getter will handle extracting the list
+      return {'_list': value};
+    }
+    
+    // Try to cast to Map if it's a dynamic Map
+    try {
+      return value as Map<String, dynamic>?;
+    } catch (e) {
+      // If casting fails, return null
+      return null;
+    }
   }
 
   Map<String, dynamic> toJson() {

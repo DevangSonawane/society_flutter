@@ -29,7 +29,20 @@ class NotificationsNotifier extends StateNotifier<AsyncValue<List<NotificationMo
       final notifications = await repository.getNotifications();
       state = AsyncValue.data(notifications);
     } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
+      // Check if it's a table not found error - return empty list instead of error
+      final errorStr = e.toString().toLowerCase();
+      if (errorStr.contains('does not exist') || 
+          errorStr.contains('not found') ||
+          errorStr.contains('schema cache') ||
+          errorStr.contains('could not find the table') ||
+          errorStr.contains('public.notifications') ||
+          errorStr.contains('public.notification') ||
+          errorStr.contains('database error')) {
+        // Return empty list instead of error state
+        state = const AsyncValue.data(<NotificationModel>[]);
+      } else {
+        state = AsyncValue.error(e, stack);
+      }
     }
   }
 

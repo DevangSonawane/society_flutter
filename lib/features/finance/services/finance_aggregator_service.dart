@@ -1,4 +1,6 @@
 import '../data/models/transaction_model.dart';
+import '../data/models/vendor_invoice_model.dart';
+import '../data/models/billing_history_model.dart';
 import '../../maintenance_payments/data/models/maintenance_payment_model.dart';
 import '../../vendors/data/models/vendor_model.dart';
 import '../../expenses_charges/data/models/deposit_model.dart';
@@ -35,35 +37,65 @@ class FinanceAggregatorService {
         .toList();
   }
 
-  /// Convert vendor payments to transactions
-  /// Format: "Vendor Payment - {vendorName} - {invoiceNumber}"
-  /// Note: Since we don't have separate invoice tracking, we use vendor ID as reference
-  static List<TransactionModel> convertVendorPayments(List<VendorModel> vendors) {
-    return vendors
-        .where((vendor) => vendor.paidBill > 0)
-        .map((vendor) {
-          // Format: "Vendor Payment - {vendorName} - {invoiceNumber}"
-          // Use vendor ID as invoice number since we don't have separate invoice tracking
-          final invoiceRef = vendor.id.length > 8 ? vendor.id.substring(0, 8) : vendor.id;
-          final description = 'Vendor Payment - ${vendor.vendorName} - $invoiceRef';
-          
-          // Use updatedAt if available (when payment was made), otherwise createdAt
-          final transactionDate = vendor.updatedAt ?? vendor.createdAt;
-          
-          return TransactionModel(
-            id: 'vendor_${vendor.id}',
-            description: description,
-            amount: vendor.paidBill,
-            type: TransactionType.debit,
-            category: 'vendor',
-            createdAt: transactionDate,
-            referenceNumber: invoiceRef,
-            paidTo: vendor.vendorName,
-            source: TransactionSource.vendor,
-            sourceId: vendor.id,
-          );
-        })
-        .toList();
+  /// Convert vendor invoices to expense transactions
+  /// Format: "Vendor Invoice - {invoiceNumber} - {vendorName}"
+  static List<TransactionModel> convertVendorInvoices(
+    List<VendorInvoiceModel> invoices,
+    Map<String, String> vendorIdToNameMap,
+  ) {
+    return invoices.map((invoice) {
+      final vendorName = vendorIdToNameMap[invoice.vendorId] ?? 'Unknown Vendor';
+      final description = 'Vendor Invoice - ${invoice.invoiceNumber} - $vendorName';
+      
+      return TransactionModel(
+        id: 'invoice_${invoice.id}',
+        description: description,
+        amount: invoice.total,
+        type: TransactionType.debit,
+        category: 'vendor',
+        createdAt: invoice.invoiceDate,
+        referenceNumber: invoice.invoiceNumber,
+        paidTo: vendorName,
+        source: TransactionSource.vendor,
+        sourceId: invoice.id,
+      );
+    }).toList();
+  }
+
+  /// Convert billing history (vendor payments) to transactions
+  /// Format: "Vendor Payment - {vendorName} - {invoiceNumber if available}"
+  static List<TransactionModel> convertBillingHistory(
+    List<BillingHistoryModel> billingHistory,
+    Map<String, String> vendorIdToNameMap,
+    Map<String, String> invoiceIdToNumberMap,
+  ) {
+    return billingHistory.map((payment) {
+      final vendorName = payment.vendorId != null 
+          ? (vendorIdToNameMap[payment.vendorId] ?? 'Unknown Vendor')
+          : 'Unknown Vendor';
+      
+      String invoiceRef = '';
+      if (payment.invoiceId != null) {
+        invoiceRef = invoiceIdToNumberMap[payment.invoiceId] ?? payment.invoiceId!.substring(0, 8);
+      }
+      
+      final description = invoiceRef.isNotEmpty
+          ? 'Vendor Payment - $vendorName - $invoiceRef'
+          : 'Vendor Payment - $vendorName';
+      
+      return TransactionModel(
+        id: 'billing_${payment.id}',
+        description: description,
+        amount: payment.amountPaid,
+        type: TransactionType.debit,
+        category: 'vendor',
+        createdAt: payment.paymentDate,
+        referenceNumber: payment.id,
+        paidTo: vendorName,
+        source: TransactionSource.vendor,
+        sourceId: payment.id,
+      );
+    }).toList();
   }
 
   /// Convert deposits to transactions
@@ -146,17 +178,34 @@ class FinanceAggregatorService {
   /// Aggregate all transactions from all sources
   static List<TransactionModel> aggregateTransactions({
     required List<MaintenancePaymentModel> maintenancePayments,
-    required List<VendorModel> vendors,
+    required List<VendorInvoiceModel> vendorInvoices,
+    required List<BillingHistoryModel> billingHistory,
+    required List<VendorModel> vendors, // Still needed for vendor name mapping
     required List<DepositModel> deposits,
     required List<SocietyRoomModel> rooms,
   }) {
     final allTransactions = <TransactionModel>[];
     
+    // Create vendor ID to name mapping
+    final vendorIdToNameMap = <String, String>{};
+    for (final vendor in vendors) {
+      vendorIdToNameMap[vendor.id] = vendor.vendorName;
+    }
+    
+    // Create invoice ID to invoice number mapping
+    final invoiceIdToNumberMap = <String, String>{};
+    for (final invoice in vendorInvoices) {
+      invoiceIdToNumberMap[invoice.id] = invoice.invoiceNumber;
+    }
+    
     // Add maintenance payment transactions (credits)
     allTransactions.addAll(convertMaintenancePayments(maintenancePayments));
     
-    // Add vendor payment transactions (debits)
-    allTransactions.addAll(convertVendorPayments(vendors));
+    // Add vendor invoice transactions (debits - expenses)
+    allTransactions.addAll(convertVendorInvoices(vendorInvoices, vendorIdToNameMap));
+    
+    // Add vendor payment transactions from billing history (debits)
+    allTransactions.addAll(convertBillingHistory(billingHistory, vendorIdToNameMap, invoiceIdToNumberMap));
     
     // Add deposit transactions (credits and debits)
     allTransactions.addAll(convertDeposits(deposits));

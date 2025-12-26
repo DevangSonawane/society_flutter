@@ -136,5 +136,24 @@ class MaintenancePaymentRepository {
       },
     );
   }
+
+  /// Get payments filtered by flat number (for residents)
+  Future<List<MaintenancePaymentModel>> getPaymentsByFlatNumber(String flatNumber) async {
+    return SupabaseService.executeQuery<List<MaintenancePaymentModel>>(
+      context: 'getPaymentsByFlatNumber',
+      query: () async {
+        final response = await SupabaseService.client
+            .from(_table)
+            .select()
+            .eq('flat_number', flatNumber)
+            .order('year', ascending: false)
+            .order('month', ascending: false);
+        
+        return (response as List)
+            .map((json) => MaintenancePaymentModel.fromJson(json as Map<String, dynamic>))
+            .toList();
+      },
+    );
+  }
 }
 
