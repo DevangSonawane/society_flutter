@@ -100,7 +100,7 @@ class ViewPermissionScreen extends StatelessWidget {
                       Row(
                         children: [
                           Expanded(
-                            child: _buildInfoRow('Flat Number', permission.flatNumber),
+                            child: _buildInfoRow('Flat Number', permission.flatNumber ?? 'N/A'),
                           ),
                           if (permission.wing != null)
                             Expanded(

@@ -66,7 +66,9 @@ class _CreateResidentScreenState extends ConsumerState<CreateResidentScreen> {
           id: _uuid.v4(),
           name: _memberNameController.text,
           phoneNumber: _memberPhoneController.text,
-          dateJoined: _memberDateJoined ?? DateTime.now(),
+          dateJoined: _memberDateJoined != null 
+              ? _memberDateJoined!.toIso8601String().split('T')[0]
+              : null,
         ));
         _memberNameController.clear();
         _memberPhoneController.clear();
@@ -87,7 +89,6 @@ class _CreateResidentScreenState extends ConsumerState<CreateResidentScreen> {
       HapticHelper.light();
       setState(() {
         _vehicles.add(VehicleModel(
-          id: _uuid.v4(),
           vehicleNumber: _vehicleNumberController.text,
           vehicleType: _selectedVehicleType,
         ));
@@ -531,7 +532,7 @@ class _CreateResidentScreenState extends ConsumerState<CreateResidentScreen> {
                 final vehicle = entry.value;
                 return FadeSlideWidget(
                   delay: Duration(milliseconds: 400 + (index * 50)),
-                  key: ValueKey(vehicle.id),
+                  key: ValueKey('${vehicle.vehicleNumber}_${vehicle.vehicleType}'),
                   child: Card(
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(

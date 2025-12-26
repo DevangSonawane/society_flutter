@@ -43,7 +43,7 @@ class _EditPermissionScreenState extends ConsumerState<EditPermissionScreen> {
     _residentNameController = TextEditingController(text: widget.permission.residentName);
     _phoneNumberController = TextEditingController(text: widget.permission.phoneNumber ?? '');
     _emailController = TextEditingController(text: widget.permission.email ?? '');
-    _flatNumberController = TextEditingController(text: widget.permission.flatNumber);
+    _flatNumberController = TextEditingController(text: widget.permission.flatNumber ?? '');
     _wingController = TextEditingController(text: widget.permission.wing ?? '');
     _permissionTextController = TextEditingController(text: widget.permission.permissionText);
     _selectedStatus = widget.permission.status ?? 'Pending';

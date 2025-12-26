@@ -84,7 +84,7 @@ class SearchService {
     if (complaints != null) {
       for (final complaint in complaints) {
         if (_matches(complaint.complainerName, lowerQuery) ||
-            _matches(complaint.flatNumber, lowerQuery) ||
+            (complaint.flatNumber != null && _matches(complaint.flatNumber!, lowerQuery)) ||
             _matches(complaint.complaintText, lowerQuery) ||
             (complaint.phoneNumber != null && _matches(complaint.phoneNumber!, lowerQuery))) {
           results.add(SearchResult(
@@ -105,7 +105,7 @@ class SearchService {
     if (permissions != null) {
       for (final permission in permissions) {
         if (_matches(permission.residentName, lowerQuery) ||
-            _matches(permission.flatNumber, lowerQuery) ||
+            (permission.flatNumber != null && _matches(permission.flatNumber!, lowerQuery)) ||
             _matches(permission.permissionText, lowerQuery)) {
           results.add(SearchResult(
             id: permission.id,

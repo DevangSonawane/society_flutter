@@ -12,7 +12,7 @@ class DepositRepository {
         final response = await SupabaseService.client
             .from(_table)
             .select()
-            .order('created_at', ascending: false);
+            .order('deposit_date', ascending: false);
         
         return (response as List)
             .map((json) => DepositModel.fromJson(json as Map<String, dynamic>))

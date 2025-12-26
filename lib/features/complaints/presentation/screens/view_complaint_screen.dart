@@ -100,7 +100,7 @@ class ViewComplaintScreen extends StatelessWidget {
                       Row(
                         children: [
                           Expanded(
-                            child: _buildInfoRow('Flat Number', complaint.flatNumber),
+                            child: _buildInfoRow('Flat Number', complaint.flatNumber ?? 'N/A'),
                           ),
                           if (complaint.wing != null)
                             Expanded(

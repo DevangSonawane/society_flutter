@@ -12,7 +12,7 @@ class PermissionRepository {
         final response = await SupabaseService.client
             .from(_table)
             .select()
-            .order('created_at', ascending: false);
+            .order('permission_date', ascending: false);
         
         return (response as List)
             .map((json) => PermissionModel.fromJson(json as Map<String, dynamic>))

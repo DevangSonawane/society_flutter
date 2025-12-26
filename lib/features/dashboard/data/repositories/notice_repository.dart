@@ -13,7 +13,7 @@ class NoticeRepository {
             .from(_table)
             .select()
             .eq('is_archived', false)
-            .order('created_at', ascending: false);
+            .order('date', ascending: false);
         
         return (response as List)
             .map((json) => NoticeModel.fromJson(json as Map<String, dynamic>))

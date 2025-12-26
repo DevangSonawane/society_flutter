@@ -12,7 +12,7 @@ class ComplaintRepository {
         final response = await SupabaseService.client
             .from(_table)
             .select()
-            .order('created_at', ascending: false);
+            .order('complaint_date', ascending: false);
         
         return (response as List)
             .map((json) => ComplaintModel.fromJson(json as Map<String, dynamic>))

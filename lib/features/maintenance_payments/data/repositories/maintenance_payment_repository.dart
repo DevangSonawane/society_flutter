@@ -12,7 +12,9 @@ class MaintenancePaymentRepository {
         final response = await SupabaseService.client
             .from(_table)
             .select()
-            .order('created_at', ascending: false);
+            .order('year', ascending: false)
+            .order('month', ascending: false)
+            .order('flat_number');
         
         return (response as List)
             .map((json) => MaintenancePaymentModel.fromJson(json as Map<String, dynamic>))

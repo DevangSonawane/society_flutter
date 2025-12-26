@@ -55,7 +55,7 @@ class _ComplaintsScreenState extends ConsumerState<ComplaintsScreen> {
                 return c.complainerName.toLowerCase().contains(query) ||
                     (c.phoneNumber?.toLowerCase().contains(query) ?? false) ||
                     (c.email?.toLowerCase().contains(query) ?? false) ||
-                    c.flatNumber.toLowerCase().contains(query) ||
+                    (c.flatNumber?.toLowerCase().contains(query) ?? false) ||
                     c.complaintText.toLowerCase().contains(query);
               }).toList();
         
@@ -216,7 +216,7 @@ class _ComplaintsScreenState extends ConsumerState<ComplaintsScreen> {
                                               children: [
                                                 Text(complaint.complainerName, style: AppTextStyles.h4),
                                                 const SizedBox(height: 4),
-                                                Text(complaint.flatNumber, style: AppTextStyles.bodySmall),
+                                                Text(complaint.flatNumber ?? 'N/A', style: AppTextStyles.bodySmall),
                                               ],
                                             ),
                                           ),
@@ -313,7 +313,7 @@ class _ComplaintsScreenState extends ConsumerState<ComplaintsScreen> {
                                       DataCell(Text(complaint.complainerName)),
                                       DataCell(Text(complaint.phoneNumber ?? 'N/A')),
                                       DataCell(Text(complaint.email ?? 'N/A')),
-                                      DataCell(Text(complaint.flatNumber)),
+                                      DataCell(Text(complaint.flatNumber ?? 'N/A')),
                                       DataCell(
                                         SizedBox(
                                           width: 200,

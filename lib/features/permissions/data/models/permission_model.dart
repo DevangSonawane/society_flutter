@@ -5,7 +5,7 @@ class PermissionModel extends Equatable {
   final String residentName;
   final String? phoneNumber;
   final String? email;
-  final String flatNumber;
+  final String? flatNumber;
   final String? wing;
   final String permissionText;
   final String? status;
@@ -18,7 +18,7 @@ class PermissionModel extends Equatable {
     required this.residentName,
     this.phoneNumber,
     this.email,
-    required this.flatNumber,
+    this.flatNumber,
     this.wing,
     required this.permissionText,
     this.status,

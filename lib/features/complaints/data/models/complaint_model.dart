@@ -5,7 +5,7 @@ class ComplaintModel extends Equatable {
   final String complainerName;
   final String? phoneNumber;
   final String? email;
-  final String flatNumber;
+  final String? flatNumber;
   final String? wing;
   final String complaintText;
   final String? status;
@@ -18,7 +18,7 @@ class ComplaintModel extends Equatable {
     required this.complainerName,
     this.phoneNumber,
     this.email,
-    required this.flatNumber,
+    this.flatNumber,
     this.wing,
     required this.complaintText,
     this.status,

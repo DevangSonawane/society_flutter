@@ -55,7 +55,7 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
                 return p.residentName.toLowerCase().contains(query) ||
                     (p.phoneNumber?.toLowerCase().contains(query) ?? false) ||
                     (p.email?.toLowerCase().contains(query) ?? false) ||
-                    p.flatNumber.toLowerCase().contains(query) ||
+                    (p.flatNumber?.toLowerCase().contains(query) ?? false) ||
                     p.permissionText.toLowerCase().contains(query);
               }).toList();
         
@@ -209,7 +209,7 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
                                               children: [
                                                 Text(permission.residentName, style: AppTextStyles.h4),
                                                 const SizedBox(height: 4),
-                                                Text(permission.flatNumber, style: AppTextStyles.bodySmall),
+                                                Text(permission.flatNumber ?? 'N/A', style: AppTextStyles.bodySmall),
                                               ],
                                             ),
                                           ),
@@ -306,7 +306,7 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
                                       DataCell(Text(permission.residentName)),
                                       DataCell(Text(permission.phoneNumber ?? 'N/A')),
                                       DataCell(Text(permission.email ?? 'N/A')),
-                                      DataCell(Text(permission.flatNumber)),
+                                      DataCell(Text(permission.flatNumber ?? 'N/A')),
                                       DataCell(
                                         SizedBox(
                                           width: 200,

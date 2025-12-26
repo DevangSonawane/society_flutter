@@ -210,17 +210,21 @@ class ResidentMember extends Equatable {
   final String id;
   final String name;
   final String phoneNumber;
-  final DateTime? dateJoined;
+  final String? email;
+  final String? dateJoined; // Stored as string (YYYY-MM-DD format)
+  final bool? isRenter;
 
   const ResidentMember({
     required this.id,
     required this.name,
     required this.phoneNumber,
+    this.email,
     this.dateJoined,
+    this.isRenter,
   });
 
   @override
-  List<Object?> get props => [id, name, phoneNumber, dateJoined];
+  List<Object?> get props => [id, name, phoneNumber, email, dateJoined, isRenter];
 
   factory ResidentMember.fromJson(Map<String, dynamic> json) {
     // Generate ID if not present (for backward compatibility)
@@ -232,36 +236,45 @@ class ResidentMember extends Equatable {
                        json['phoneNumber'] as String? ?? 
                        '';
     
-    // Handle date joined from either snake_case or camelCase
-    DateTime? dateJoined;
+    // Handle date joined - can be string (YYYY-MM-DD) or DateTime
+    String? dateJoined;
     if (json['date_joined'] != null && json['date_joined'].toString().isNotEmpty) {
-      try {
-        dateJoined = DateTime.parse(json['date_joined'] as String);
-      } catch (e) {
-        dateJoined = null;
+      final dateValue = json['date_joined'];
+      if (dateValue is String) {
+        dateJoined = dateValue;
+      } else if (dateValue is DateTime) {
+        dateJoined = dateValue.toIso8601String().split('T')[0];
       }
     } else if (json['dateJoined'] != null && json['dateJoined'].toString().isNotEmpty) {
-      try {
-        dateJoined = DateTime.parse(json['dateJoined'] as String);
-      } catch (e) {
-        dateJoined = null;
+      final dateValue = json['dateJoined'];
+      if (dateValue is String) {
+        dateJoined = dateValue;
+      } else if (dateValue is DateTime) {
+        dateJoined = dateValue.toIso8601String().split('T')[0];
       }
     }
+    
+    // Handle isRenter from either snake_case or camelCase
+    final isRenter = json['is_renter'] as bool? ?? 
+                     json['isRenter'] as bool?;
     
     return ResidentMember(
       id: id,
       name: json['name'] as String,
       phoneNumber: phoneNumber,
+      email: json['email'] as String?,
       dateJoined: dateJoined,
+      isRenter: isRenter,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'name': name,
-      'phone_number': phoneNumber,
-      'date_joined': dateJoined?.toIso8601String(),
+      'phoneNumber': phoneNumber,
+      'email': email,
+      'dateJoined': dateJoined,
+      'isRenter': isRenter,
     };
   }
 }

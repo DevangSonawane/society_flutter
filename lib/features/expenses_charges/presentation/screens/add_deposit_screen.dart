@@ -70,6 +70,9 @@ class _AddDepositScreenState extends ConsumerState<AddDepositScreen> {
     final deposit = DepositModel(
       id: _uuid.v4(),
       flatNumber: _flatNumberController.text.trim(),
+      residentName: _ownerNameController.text.trim().isNotEmpty
+          ? _ownerNameController.text.trim()
+          : '',
       ownerName: _ownerNameController.text.trim().isNotEmpty
           ? _ownerNameController.text.trim()
           : null,

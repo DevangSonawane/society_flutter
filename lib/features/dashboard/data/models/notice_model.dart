@@ -90,7 +90,7 @@ class NoticeModel extends Equatable {
       'id': id,
       'title': title,
       'content': content,
-      'date': date.toIso8601String(),
+      'date': date.toIso8601String().split('T')[0], // DATE type uses YYYY-MM-DD format
       'priority': priority.name,
       'category': category.name,
       'author': author,

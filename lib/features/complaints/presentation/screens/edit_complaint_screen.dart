@@ -43,7 +43,7 @@ class _EditComplaintScreenState extends ConsumerState<EditComplaintScreen> {
     _complainerNameController = TextEditingController(text: widget.complaint.complainerName);
     _phoneNumberController = TextEditingController(text: widget.complaint.phoneNumber ?? '');
     _emailController = TextEditingController(text: widget.complaint.email ?? '');
-    _flatNumberController = TextEditingController(text: widget.complaint.flatNumber);
+    _flatNumberController = TextEditingController(text: widget.complaint.flatNumber ?? '');
     _wingController = TextEditingController(text: widget.complaint.wing ?? '');
     _complaintTextController = TextEditingController(text: widget.complaint.complaintText);
     _selectedStatus = widget.complaint.status ?? 'Pending';

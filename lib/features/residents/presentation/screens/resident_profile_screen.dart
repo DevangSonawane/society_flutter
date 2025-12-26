@@ -149,7 +149,7 @@ class ResidentProfileScreen extends ConsumerWidget {
                                   ),
                                   if (member.dateJoined != null)
                                     Text(
-                                      'Joined: ${AppFormatters.dateShort(member.dateJoined!)}',
+                                      'Joined: ${member.dateJoined}',
                                       style: AppTextStyles.bodySmall.copyWith(
                                         color: AppColors.textSecondary,
                                       ),

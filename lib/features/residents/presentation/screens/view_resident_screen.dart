@@ -149,7 +149,7 @@ class ViewResidentScreen extends StatelessWidget {
                                 ),
                                 Text(
                                   member.dateJoined != null 
-                                    ? AppFormatters.dateShort(member.dateJoined!)
+                                    ? member.dateJoined!
                                     : 'N/A',
                                   style: AppTextStyles.bodySmall.copyWith(
                                     color: AppColors.textSecondary,
